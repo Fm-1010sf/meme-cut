@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #0a0a0a;
+  --color-ink-soft: #525252;
+  --color-muted: #8a8a8a;
+  --color-line: #e8e8e8;
+  --color-line-strong: #d4d4d4;
+  --color-accent: #2563eb;
+  --color-accent-soft: #eff4ff;
+  --color-danger: #dc2626;
+  --color-canvas: #fafafa;
+  --radius-card: 26px;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  height: 28px;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.18);
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.14);
+}
+input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--color-ink);
+}
+
+/* 细网格底纹，给纯白背景一点结构感，不抢内容 */
+.grid-veil {
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.028) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

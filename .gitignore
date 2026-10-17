@@ -1,0 +1,19 @@
+# 依赖与构建产物
+node_modules/
+dist/
+.vite/
+*.local
+
+# 测试素材：体积大，且能由 ffmpeg 重新生成（见 test-fixture/make-fixtures.ps1）
+test-fixture/*.mp4
+test-fixture/*.mov
+test-fixture/*.webm
+
+# 测试跑出来的中间产物
+test-fixture/*.png
+test-fixture/*.gif
+test-fixture/*.jpg
+
+# 系统杂项
+Thumbs.db
+.DS_Store
