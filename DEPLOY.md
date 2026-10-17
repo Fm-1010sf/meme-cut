@@ -1,41 +1,57 @@
 # 部署
 
-## 现状（2026-10）
-
-已经部署到 Cloudflare Workers 静态资源：
+## 已上线
 
 ```
-https://meme-cut.2020855575.workers.dev
+https://fm-1010sf.github.io/meme-cut/
 ```
 
-面板显示 **Ready**，部署是成功的。**但国内打不开。**
+仓库：<https://github.com/Fm-1010sf/meme-cut>（公开）
 
-原因不是速度，是 `workers.dev` 这个域名在国内被 DNS 污染。实测本机连续解析同一个域名，
-每次返回的 IP 都不同，且全是别人的地址：
+**真实实测**（Edge 无头浏览器，从本机访问线上地址）：
 
-```
-69.63.176.15    Facebook 段（GFW 污染常用假地址）
-69.50.221.20    Facebook 段
-103.214.168.106
-74.86.151.162
-162.125.2.5     Dropbox
-2a03:2880:f10f:83:face:b00c:0:25de   Facebook IPv6
-```
-
-拿到假 IP 自然连不上：`curl` 直接 443 超时。
-
-## 各平台在本机的实测（同一台机器、同一网络）
-
-| 平台 | 结果 |
+| 指标 | 数值 |
 | --- | --- |
-| GitHub Pages (`*.github.io`) | HTTP 200，**0.56s**，DNS 返回真实 IP 段 185.199.108-111 |
-| Netlify (`*.netlify.app`) | HTTP 200，1.14s |
-| Vercel (`*.vercel.app`) | HTTP 200，1.38s |
-| Cloudflare 主站 | HTTP 200 但 20 秒超时，页面只收了一半 |
-| Cloudflare `*.workers.dev` | DNS 污染，连不上 |
-| Cloudflare `*.pages.dev` | 解析失败 |
+| 首次绘制 | 约 2.0–2.2 秒 |
+| DOM 就绪 | 约 1.9–2.1 秒 |
+| 传输量 | 133 KB（gzip 后） |
+| 端到端功能测试 | 全部通过 |
+| 控制台错误 | 无 |
 
-结论：**Cloudflare 这条线在国内不适合做入口**，除非绑自己的域名。
+本机跑 `vite preview` 是 0.6 秒，线上 2 秒——**差在网络，不在代码**。
+133 KB 从 Fastly 拉过来在国内就是这速度。想更快只能换国内 CDN（见路线 D）。
+
+## 更新方式
+
+改了代码推上去就行，Actions 会自动构建发布：
+
+```bash
+git push
+```
+
+一两分钟后线上更新。工作流在 `.github/workflows/deploy.yml`：
+装依赖 → 类型检查 → `vite build` → 发 Pages。构建失败不会覆盖线上，旧版继续在。
+
+## 这台机器上的两个坑（换机器要重做）
+
+### 1. GitHub 必须走代理
+
+`github.com` 的 443 端口在本机被墙（换 6 个 IP 全部超时），但 `github.io`、`api.github.com`
+是通的。系统代理在 `127.0.0.1:7890`，所以：
+
+- **浏览器**能打开 github.com（走系统代理）
+- **命令行**默认不走，需要在仓库里单独配一次（已配好，写在 `.git/config`，不进版本库）：
+
+```bash
+git config --local http.proxy  http://127.0.0.1:7890
+git config --local https.proxy http://127.0.0.1:7890
+```
+
+**注意**：这个配置只在本仓库有效。换机器或重新克隆后要再配一次，否则 `git push` 会超时。
+
+### 2. npm 用国内镜像
+
+`.npmrc` 里指向 npmmirror。换到能直连 npm 的网络时删掉这个文件即可。
 
 ## 为什么不需要后端
 
@@ -55,47 +71,65 @@ dist/
   .nojekyll                阻止 GitHub Pages 跑 Jekyll
 ```
 
-## 产物是可移植的
-
-Vite 的 `base` 设成了 `'./'`，所以同一份 `dist/` 既能放域名根目录，也能放 `/仓库名/` 子路径。
-已验证：把产物放到 `/meme-cut/` 下跑完整端到端测试，全绿，首屏 597ms。
-**不用为每个平台重新打包。**
+Vite 的 `base` 是 `'./'`，所以同一份产物既能放域名根目录，也能放 `/仓库名/` 子路径。
+已验证：放到 `/meme-cut/` 下跑完整端到端测试，全绿。
 
 ---
 
-## 路线 A · GitHub Pages（推荐）
+## 走过的弯路（留档，别再踩）
 
-本机实测最快，免费，不需要域名。
+### Cloudflare 在国内不适合做入口
 
-1. 建一个 **Public** 仓库（名字例如 `meme-cut`）
-2. 把 `dist/` 里的**所有文件**传上去（网页支持直接拖拽）——注意是 `index.html` 这一层，不是外层文件夹
-3. 仓库 **Settings → Pages → Source: Deploy from a branch → main → / (root)**
-4. 等一分钟，地址是 `https://<用户名>.github.io/<仓库名>/`
+先部署到了 Cloudflare Workers 静态资源，面板显示 Ready，但国内打不开。
+不是速度问题，是 DNS 污染——连续解析同一域名，每次返回不同 IP，全是别人的地址：
 
-适用前提：`*.github.io` 在被污染名单之外。实测通过，但这类名单会变，上线后要自己验一次。
+```
+69.63.176.15    Facebook 段
+69.50.221.20    Facebook 段
+162.125.2.5     Dropbox
+2a03:2880:f10f:83:face:b00c:0:25de   Facebook IPv6
+```
 
-## 路线 B · 给现有 Worker 绑自定义域名
+各平台在本机的实测：
 
-保留已经部署好的 Cloudflare 版本，只是换一个没被污染的域名指过去。
+| 平台 | 结果 |
+| --- | --- |
+| GitHub Pages (`*.github.io`) | HTTP 200，0.53s |
+| Netlify | HTTP 200，1.14s |
+| Vercel | HTTP 200，1.38s |
+| Cloudflare 主站 | 20s 超时，半页 |
+| `*.workers.dev` | DNS 污染 |
+| `*.pages.dev` | 解析失败 |
 
-- 需要你拥有一个域名（约 ¥50/年）
-- 域名托管到 Cloudflare，然后在 Worker 的 Settings → Domains & Routes 里绑定
-- 好处：Cloudflare 的 CDN 和 HTTPS 都是现成的
-- 风险：Cloudflare 的边缘 IP 在国内本身就不稳（测得主站 20 秒超时），域名没被污染也可能慢
+**结论：Cloudflare 免费域名在国内不可用作入口，除非绑自己的域名。**
+那个 Worker 部署现在是多余的，可以在 Cloudflare 后台删掉。
 
-## 路线 C · Netlify
+### wrangler 的 OAuth 在这台机器上不可用
 
-免费，实测 1.14s，同样不需要域名。
+`wrangler login` 两次都报 `request_forbidden`（CSRF 不匹配），浏览器侧表现为
+`localhost:8976` 拒绝连接。端口本身可绑定，是 OAuth 回调链路的问题。
+用 API 令牌也没走通（Cloudflare 建令牌时报「未知错误，请检查电子邮件」）。
+**这条线放弃。**
 
-- 登录后把 `dist` 拖进 <https://app.netlify.com/drop>
-- 或者用 CLI：`netlify deploy --dir=dist --prod`
+---
 
-## 路线 D · 国内 CDN（最稳，也最慢）
+## 备选路线（如果 GitHub Pages 哪天也不通）
 
-如果访问速度和稳定性是硬指标，唯一可靠的是备案域名 + 阿里云 OSS / 腾讯云 COS + CDN。
+### 路线 A · Netlify
+
+免费，实测 1.14s。登录后把 `dist` 拖进 <https://app.netlify.com/drop>，
+或 CLI `netlify deploy --dir=dist --prod`。
+
+### 路线 B · 给 Cloudflare Worker 绑自定义域名
+
+保留已部署的 Cloudflare 版本，只换一个没被污染的域名指过去。需要自备域名（约 ¥50/年）。
+风险：Cloudflare 边缘 IP 在国内本身就不稳。
+
+### 路线 C · 国内 CDN（最稳，也最慢）
+
+备案域名 + 阿里云 OSS / 腾讯云 COS + CDN。
 
 - 速度最好，国内节点直连
-- 成本：域名 + 存储流量（这个应用流量极小，基本可忽略）
 - **代价：ICP 备案通常 1–3 周**，需要主体资质
 - 注意：国内对象存储用默认域名访问 HTML 会被强制下载，必须绑备案域名
 
@@ -107,6 +141,7 @@ Vite 的 `base` 设成了 `'./'`，所以同一份 `dist/` 既能放域名根目
 - [x] 产物可放子路径（已验证 `/meme-cut/`）
 - [x] 移动端 390px 无横向溢出
 - [x] 无控制台错误
-- [ ] **真机 iOS Safari 实测**（当前验证是 Edge 无头浏览器 + 你自己的 iPhone 手动试过加载，但完整链路没在 iOS 上跑过）
+- [x] 线上地址实测可访问，功能测试通过
+- [ ] **真机 iOS Safari 跑一遍完整链路**（加载、裁剪、生成、保存到相册再到微信添加）
 - [ ] 微信实际添加一遍，确认 200×200 / 1MB 这两个数字还有效
-- [ ] 部署后从国内网络打开一次，确认域名没被污染
+- [ ] 换一个没用过代理的网络访问一次，确认 github.io 没被污染
