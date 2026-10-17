@@ -128,7 +128,7 @@ async function generate(tag) {
       .filter(
         (d) =>
           d.children.length === 2 &&
-          /^(体积|尺寸|帧数|时长|实际帧率)$/.test(d.children[0].textContent?.trim() ?? ''),
+          /^(体积|尺寸|帧率|总帧数|时长|画质档|实际帧率)$/.test(d.children[0].textContent?.trim() ?? ''),
       )
       .map((d) => `${d.children[0].textContent.trim()}=${d.children[1].textContent.trim()}`)
     const notice =

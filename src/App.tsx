@@ -591,9 +591,15 @@ export default function App() {
                     <div className="grid grid-cols-2 gap-2">
                       <Stat label="体积" value={formatBytes(result.bytes)} />
                       <Stat label="尺寸" value={`${result.width}×${result.height}`} />
-                      <Stat label="帧数" value={String(result.frames)} />
+                      <Stat label="帧率" value={`${result.fps.toFixed(1)} fps`} />
+                      <Stat label="总帧数" value={`${result.frames} 帧`} />
                       <Stat label="时长" value={`${(result.durationMs / 1000).toFixed(2)} 秒`} />
+                      <Stat label="画质档" value={result.plan.label} />
                     </div>
+                    <p className="mt-2 text-[11.5px] leading-relaxed text-muted">
+                      {result.frames} 帧 ÷ {result.durationMs / 1000} 秒 ≈ {result.fps.toFixed(1)} fps
+                      总帧数不等于帧率
+                    </p>
                   </motion.div>
 
                   <motion.div variants={fadeUp} transition={SPRING} className="space-y-2.5">
@@ -638,23 +644,18 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={SPRING}
-                  className="space-y-3 p-5"
+                  className="p-5"
                 >
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      ['录屏', '抖音里长按屏幕录制'],
-                      ['裁切', '框出表情那一块'],
-                      ['导出', '200px 的 GIF'],
-                    ].map(([t, d]) => (
-                      <div key={t} className="rounded-xl border border-line bg-black/[0.015] p-2.5">
+                    {['录屏', '裁切', '导出'].map((t) => (
+                      <div
+                        key={t}
+                        className="rounded-xl border border-line bg-black/[0.015] px-2.5 py-3 text-center"
+                      >
                         <div className="text-[12.5px] font-medium">{t}</div>
-                        <div className="mt-0.5 text-[11px] leading-snug text-muted">{d}</div>
                       </div>
                     ))}
                   </div>
-                  <p className="text-[12px] leading-relaxed text-muted">
-                    抖音私信的表情没有对外出口 存不下来也分享不出去 录屏是唯一能拿到的路
-                  </p>
                 </motion.div>
               )}
 
